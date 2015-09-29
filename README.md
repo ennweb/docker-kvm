@@ -5,7 +5,10 @@
 Boot with ISO
 
 ```
-docker run --privileged -v ${PWD}:/data \
+docker run -v ${PWD}:/data \
+    --cap-add NET_ADMIN \
+    --device /dev/kvm:/dev/kvm \
+    --device /dev/net/tun:/dev/net/tun \
     -e VM_DISK_IMAGE=/data/disk-image \
     -e ISO=http://releases.ubuntu.com/14.04.2/ubuntu-14.04.2-desktop-amd64.iso \
     -p 16080:6080 \
@@ -15,7 +18,10 @@ docker run --privileged -v ${PWD}:/data \
 
 Turn on machine with last image
 ```
-docker run --privileged -v ${PWD}:/data \
+docker run -v ${PWD}:/data \
+    --cap-add NET_ADMIN \
+    --device /dev/kvm:/dev/kvm \
+    --device /dev/net/tun:/dev/net/tun \
     -e VM_DISK_IMAGE=/data/disk-image \
     -e ISO= \
     -p 16080:6080 \

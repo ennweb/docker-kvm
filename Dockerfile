@@ -2,14 +2,9 @@ FROM ubuntu:14.04.2
 MAINTAINER Emre <e@emre.pm>
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV HOME /root
 
-RUN apt-get update \
-    && apt-get install -y --force-yes --no-install-recommends qemu-kvm \
-        supervisor qemu-utils wget bridge-utils dnsmasq \
-    && apt-get autoclean \
-    && apt-get autoremove \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --force-yes --no-install-recommends qemu-kvm supervisor qemu-utils wget vim bridge-utils dnsmasq
+RUN apt-get autoclean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
 
 ADD startup.sh /
 ADD noVNC /noVNC/
