@@ -44,12 +44,14 @@ fi
 
 echo "[disk image]"
 if [ -z "${VM_DISK_IMAGE}" ] || [ "$VM_DISK_IMAGE_CREATE_IF_NOT_EXIST" != "0" ]; then
-  FLAGS_DISK_IMAGE=${VM_DISK_IMAGE:-/data/disk-image}
+  KVM_IMAGE=${VM_DISK_IMAGE:-/data/disk-image}
   if [ ! -f "$VM_DISK_IMAGE" ]; then
-    qemu-img create -f qcow2 ${FLAGS_DISK_IMAGE} ${VM_DISK_IMAGE_SIZE}
+    qemu-img create -f qcow2 ${KVM_IMAGE} ${VM_DISK_IMAGE_SIZE}
   fi
 fi
-[ -f "$FLAGS_DISK_IMAGE" ] || { echo "VM_DISK_IMAGE not found: ${FLAGS_DISK_IMAGE}"; exit 1; }
+[ -f "$KVM_IMAGE" ] || { echo "VM_DISK_IMAGE not found: ${KVM_IMAGE}"; exit 1; }
+FLAGS_DISK_IMAGE="drive file=${KVM_IMAGE},if=none,id=drive-disk0,format=qcow2 \
+  -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x6,drive=drive-disk0,id=virtio-disk0,bootindex=1"
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
 echo "[network]"
@@ -159,7 +161,7 @@ echo "parameter: ${FLAGS_REMOTE_ACCESS}"
 set -x
 exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   -k en-us -m ${VM_RAM} -cpu qemu64 \
+  ${FLAGS_DISK_IMAGE} \
   ${FLAGS_NETWORK} \
   ${FLAGS_ISO} \
-  ${FLAGS_DISK_IMAGE} \
   ${KVM_ARGS}
