@@ -11,8 +11,10 @@ if [ ! -e /dev/kvm ]; then
   set -e
 fi
 
-# Pass Docker command args to kvm
-KVM_ARGS=$@
+# If we were given arguments, override the default configuration
+if [ $# -gt 0 ]; then
+  exec "$@"
+fi
 
 # mountpoint check
 if [ ! -d /data ]; then
@@ -163,5 +165,4 @@ exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   -k en-us -m ${VM_RAM} -cpu qemu64 \
   ${FLAGS_DISK_IMAGE} \
   ${FLAGS_NETWORK} \
-  ${FLAGS_ISO} \
-  ${KVM_ARGS}
+  ${FLAGS_ISO}
