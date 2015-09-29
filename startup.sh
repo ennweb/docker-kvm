@@ -126,7 +126,7 @@ if [ -z "$NETWORK" ] || [ "$NETWORK" == "bridge" ]; then
     exit 4
   fi
   echo allow $BRIDGE_IFACE >  /etc/qemu/bridge.conf
-  FLAGS_NETWORK="-netdev bridge,br=\$BRIDGE_IFACE,id=net0 -device virtio-net-pci,netdev=net0,mac=\$MAC"
+  FLAGS_NETWORK="-netdev bridge,br=${BRIDGE_IFACE},id=net0 -device virtio-net-pci,netdev=net0,mac=${MAC}"
 elif [ "$NETWORK" == "tap" ]; then
   echo "allow $NETWORK_BRIDGE_IF" >/etc/qemu/bridge.conf
 
