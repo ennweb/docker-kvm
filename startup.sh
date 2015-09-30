@@ -26,7 +26,6 @@ fi
 
 VM_RAM=${VM_RAM:-2048}
 VM_DISK_IMAGE_SIZE=${VM_IMAGE:-10G}
-SPICE_PORT=5900
 
 if [ -n "$ISO" ]; then
   echo "[iso]"
@@ -150,16 +149,11 @@ echo "Using ${NETWORK}"
 echo "parameter: ${FLAGS_NETWORK}"
 
 echo "[Remote Access]"
-if [ -z "$REMOTE_ACCESS" ] || [ "$REMOTE_ACCESS" == "spice" ]; then
-  FLAGS_REMOTE_ACCESS="-vga qxl -spice port=${SPICE_PORT},addr=0.0.0.0,disable-ticketing"
-elif [ "$REMOTE_ACCESS" == "vnc" ]; then
-  FLAGS_REMOTE_ACCESS="-vnc :0"
+if [ -d /data ]; then
+  FLAGS_REMOTE_ACCESS="-vnc unix:/data/vnc.socket"
 fi
 echo "parameter: ${FLAGS_REMOTE_ACCESS}"
 
-
-# Execute with default settings
-/noVNC/utils/launch.sh --listen 6080 &
 set -x
 exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   -k en-us -m ${VM_RAM} -cpu qemu64 \
