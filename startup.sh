@@ -11,10 +11,8 @@ if [ ! -e /dev/kvm ]; then
   set -e
 fi
 
-# If we were given arguments, override the default configuration
-if [ $# -gt 0 ]; then
-  exec "$@"
-fi
+# Pass Docker command args to kvm
+KVM_ARGS=$@
 
 # mountpoint check
 if [ ! -d /data ]; then
@@ -36,7 +34,7 @@ if [ -n "$ISO" ]; then
     fi
     ISO=/data/${basename}
   fi
-  FLAGS_ISO="-cdrom $ISO"
+  FLAGS_ISO="-drive file=${ISO},media=cdrom,index=2"
   if [ ! -f "$ISO" ]; then
     echo "ISO file not found: $ISO"
     exit 1
@@ -52,7 +50,7 @@ if [ -z "${VM_DISK_IMAGE}" ] || [ "$VM_DISK_IMAGE_CREATE_IF_NOT_EXIST" != "0" ];
 fi
 [ -f "$KVM_IMAGE" ] || { echo "VM_DISK_IMAGE not found: ${KVM_IMAGE}"; exit 1; }
 FLAGS_DISK_IMAGE="-drive file=${KVM_IMAGE},if=none,id=drive-disk0,format=qcow2 \
-  -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x6,drive=drive-disk0,id=virtio-disk0,bootindex=1"
+  -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x6,drive=drive-disk0,id=virtio-disk0,index=1"
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
 echo "[network]"
@@ -159,4 +157,5 @@ exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   -k en-us -m ${VM_RAM} -cpu qemu64 \
   ${FLAGS_DISK_IMAGE} \
   ${FLAGS_NETWORK} \
-  ${FLAGS_ISO}
+  ${FLAGS_ISO} \
+  $KVM_ARGS
