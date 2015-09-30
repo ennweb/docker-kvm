@@ -49,8 +49,8 @@ if [ -z "${VM_DISK_IMAGE}" ] || [ "$VM_DISK_IMAGE_CREATE_IF_NOT_EXIST" != "0" ];
   fi
 fi
 [ -f "$KVM_IMAGE" ] || { echo "VM_DISK_IMAGE not found: ${KVM_IMAGE}"; exit 1; }
-FLAGS_DISK_IMAGE="-drive file=${KVM_IMAGE},if=none,id=drive-disk0,format=qcow2 \
-  -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x6,drive=drive-disk0,id=virtio-disk0,index=1"
+FLAGS_DISK_IMAGE="-drive file=${KVM_IMAGE},if=none,id=drive-disk0,format=qcow2,index=1 \
+  -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x6,drive=drive-disk0,id=virtio-disk0,bootindex=1"
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
 echo "[network]"
