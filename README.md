@@ -24,7 +24,7 @@ docker run -v ${PWD}:/data \
     --device /dev/kvm:/dev/kvm \
     --device /dev/net/tun:/dev/net/tun \
     -e RAM=2048 \
-    -e IMAGE=glusterfs://server:/volume/disk-image.qcow2 \
+    -e IMAGE=glusterfs://server/volume/disk-image.qcow2 \
     -e ISO=glusterfs://server/volume/cd-image.iso \
     -p 2222:22 \
     -p 8080:80 \
