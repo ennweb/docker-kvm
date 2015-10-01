@@ -16,6 +16,7 @@ docker run -v ${PWD}:/data \
     ennweb/kvm
 ```
 
+
 Boot with glusterfs volume
 ```
 docker run -v ${PWD}:/data \
@@ -30,6 +31,7 @@ docker run -v ${PWD}:/data \
     ennweb/kvm
 ```
 
+
 Create new volume file
 ```
 docker run -v ${PWD}:/data \
@@ -43,5 +45,6 @@ docker run -v ${PWD}:/data \
     -p 8080:80 \
     ennweb/kvm
 ```
+
 
 This image also provides vnc to access remote desktop via /data/vnc.socket file
