@@ -16,40 +16,36 @@ KVM_ARGS=$@
 
 # mountpoint check
 if [ ! -d /data ]; then
-  if [ "${ISO:0:1}" != "/" ] || [ -z "$VM_DISK_IMAGE" ]; then
+  if [ "${ISO:0:1}" != "/" ] || [ -z "$IMAGE" ]; then
     echo "/data not mounted: using -v to mount it"
     exit 1
   fi
 fi
 
-VM_RAM=${VM_RAM:-2048}
-VM_DISK_IMAGE_SIZE=${VM_IMAGE:-10G}
-
 if [ -n "$ISO" ]; then
   echo "[iso]"
-  if [ "${ISO:0:1}" != "/" ]; then
+  if [ "${ISO:0:1}" != "/" ] && [ "${ISO:0:12}" != "glusterfs://" ]; then
     basename=$(basename $ISO)
     if [ ! -f "/data/${basename}" ] || [ "$ISO_FORCE_DOWNLOAD" != "0" ]; then
       wget -O- "$ISO" > /data/${basename}
     fi
     ISO=/data/${basename}
   fi
-  FLAGS_ISO="-drive file=${ISO},media=cdrom,index=2"
-  if [ ! -f "$ISO" ]; then
+  FLAGS_ISO="-drive file=${ISO},if=virtio,media=cdrom,index=2"
+  if [ "${ISO:0:12}" != "glusterfs://" ] && [ ! -f "$ISO" ]; then
     echo "ISO file not found: $ISO"
     exit 1
   fi
+  echo "parameter: ${FLAGS_ISO}"
 fi
 
 echo "[disk image]"
-if [ -z "${VM_DISK_IMAGE}" ] || [ "$VM_DISK_IMAGE_CREATE_IF_NOT_EXIST" != "0" ]; then
-  KVM_IMAGE=${VM_DISK_IMAGE:-/data/disk-image}
-  if [ ! -f "$VM_DISK_IMAGE" ]; then
-    qemu-img create -f qcow2 ${KVM_IMAGE} ${VM_DISK_IMAGE_SIZE}
-  fi
+if [ "$IMAGE_CREATE" == "1" ]; then
+  qemu-img create -f qcow2 ${IMAGE} ${IMAGE_SIZE}
+elif [ "${ISO:0:12}" != "glusterfs://" ] && [ ! -f "$IMAGE" ]; then
+  echo "IMAGE not found: ${IMAGE}"; exit 1;
 fi
-[ -f "$KVM_IMAGE" ] || { echo "VM_DISK_IMAGE not found: ${KVM_IMAGE}"; exit 1; }
-FLAGS_DISK_IMAGE="-drive file=${KVM_IMAGE},if=none,id=drive-disk0,format=qcow2,index=1 \
+FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=none,id=drive-disk0,format=qcow2,index=1 \
   -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x6,drive=drive-disk0,id=virtio-disk0,bootindex=1"
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
@@ -154,8 +150,9 @@ echo "parameter: ${FLAGS_REMOTE_ACCESS}"
 
 set -x
 exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
-  -k en-us -m ${VM_RAM} -cpu qemu64 \
+  -k en-us -m ${RAM} -cpu qemu64 -usb -usbdevice tablet \
+  -name ${HOSTNAME} \
   ${FLAGS_DISK_IMAGE} \
   ${FLAGS_NETWORK} \
   ${FLAGS_ISO} \
-  $KVM_ARGS
+  ${KVM_ARGS}
