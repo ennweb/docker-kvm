@@ -31,7 +31,7 @@ if [ -n "$ISO" ]; then
     fi
     ISO=/data/${basename}
   fi
-  FLAGS_ISO="-drive file=${ISO},if=virtio,media=cdrom,index=2"
+  FLAGS_ISO="-drive file=${ISO},media=cdrom,index=2"
   if [ "${ISO:0:12}" != "glusterfs://" ] && [ ! -f "$ISO" ]; then
     echo "ISO file not found: $ISO"
     exit 1
@@ -42,7 +42,7 @@ fi
 echo "[disk image]"
 if [ "$IMAGE_CREATE" == "1" ]; then
   qemu-img create -f qcow2 ${IMAGE} ${IMAGE_SIZE}
-elif [ "${ISO:0:12}" != "glusterfs://" ] && [ ! -f "$IMAGE" ]; then
+elif [ "${IMAGE:0:12}" != "glusterfs://" ] && [ ! -f "$IMAGE" ]; then
   echo "IMAGE not found: ${IMAGE}"; exit 1;
 fi
 FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=none,id=drive-disk0,format=qcow2,index=1 \
