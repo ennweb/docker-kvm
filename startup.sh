@@ -48,8 +48,7 @@ if [ "$IMAGE_CREATE" == "1" ]; then
 elif [ "${IMAGE:0:10}" != "gluster://" ] && [ ! -f "$IMAGE" ]; then
   echo "IMAGE not found: ${IMAGE}"; exit 1;
 fi
-FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=none,id=drive-disk0,format=qcow2,index=1 \
-  -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x6,drive=drive-disk0,id=virtio-disk0,bootindex=1"
+FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=none,format=qcow2,index=1"
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
 echo "[network]"
@@ -140,10 +139,12 @@ else
   NETWORK="user"
   REDIR=""
   if [ ! -z "$PORTS" ]; then
+    OIFS=$IFS
     IFS=","
     for port in $PORTS; do
       REDIR+="-redir tcp:${port}::${port} "
     done
+    IFS=$OIFS
   fi
   FLAGS_NETWORK="-net nic,model=virtio -net user ${REDIR}"
 fi
