@@ -11,8 +11,11 @@ if [ ! -e /dev/kvm ]; then
   set -e
 fi
 
-# Pass Docker command args to kvm
-KVM_ARGS=$@
+# If we were given arguments, override the default configuration
+if [ $# -gt 0 ]; then
+  exec /usr/bin/kvm $@
+  exit $?
+fi
 
 # mountpoint check
 if [ ! -d /data ]; then
@@ -86,8 +89,7 @@ function itoa {
   echo $((${1}%256))
 }
 
-# If we have a NETWORK_BRIDGE_IF set, add it to /etc/qemu/bridge.conf
-if [ -z "$NETWORK" ] || [ "$NETWORK" == "bridge" ]; then
+if [ "$NETWORK" == "bridge" ]; then
   IFACE=eth0
   BRIDGE_IFACE=br0
   MAC=`ip addr show $IFACE | grep ether | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*\$//g' | cut -f2 -d ' '`
@@ -126,7 +128,6 @@ if [ -z "$NETWORK" ] || [ "$NETWORK" == "bridge" ]; then
   FLAGS_NETWORK="-netdev bridge,br=${BRIDGE_IFACE},id=net0 -device virtio-net-pci,netdev=net0,mac=${MAC}"
 elif [ "$NETWORK" == "tap" ]; then
   echo "allow $NETWORK_BRIDGE_IF" >/etc/qemu/bridge.conf
-
   # Make sure we have the tun device node
   if [ ! -e /dev/net/tun ]; then
      set +e
@@ -134,10 +135,17 @@ elif [ "$NETWORK" == "tap" ]; then
      mknod /dev/net/tun c 10 $(grep '\<tun\>' /proc/misc | cut -f 1 -d' ')
      set -e
   fi
-
   FLAGS_NETWORK="-netdev bridge,br=${NETWORK_BRIDGE_IF},id=net0 -device virtio-net,netdev=net0"
 else
-  FLAGS_NETWORK="-netdev tap,id=net0,script=/var/qemu-ifup -device virtio-net,netdev=net0"
+  NETWORK="user"
+  REDIR=""
+  if [ ! -z "$PORTS" ]; then
+    IFS=","
+    for port in $PORTS; do
+      REDIR+="-redir tcp:${port}::${port} "
+    done
+  fi
+  FLAGS_NETWORK="-net nic,model=virtio -net user ${REDIR}"
 fi
 echo "Using ${NETWORK}"
 echo "parameter: ${FLAGS_NETWORK}"
@@ -150,9 +158,8 @@ echo "parameter: ${FLAGS_REMOTE_ACCESS}"
 
 set -x
 exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
-  -k en-us -m ${RAM} -cpu qemu64 -usb -usbdevice tablet \
+  -k en-us -m ${RAM} -smp ${SMP} -cpu qemu64 -usb -usbdevice tablet -no-shutdown \
   -name ${HOSTNAME} \
   ${FLAGS_DISK_IMAGE} \
-  ${FLAGS_NETWORK} \
   ${FLAGS_ISO} \
-  ${KVM_ARGS}
+  ${FLAGS_NETWORK}
