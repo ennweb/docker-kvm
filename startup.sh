@@ -48,7 +48,7 @@ if [ "$IMAGE_CREATE" == "1" ]; then
 elif [ "${IMAGE:0:10}" != "gluster://" ] && [ ! -f "$IMAGE" ]; then
   echo "IMAGE not found: ${IMAGE}"; exit 1;
 fi
-FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=none,format=qcow2,index=1"
+FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=none,format=${IMAGE_FORMAT},index=1"
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
 echo "[network]"
