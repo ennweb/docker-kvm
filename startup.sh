@@ -132,7 +132,7 @@ elif [ "$NETWORK" == "tap" ]; then
   NAMESERVER=( `grep nameserver /etc/resolv.conf | cut -f2 -d ' '` )
   NAMESERVERS=`echo ${NAMESERVER[*]} | sed "s/ /,/"`
   NETWORK_IP="${NETWORK_IP:-$(echo 172.$((RANDOM%(31-16+1)+16)).$((RANDOM%256)).$((RANDOM%(254-2+1)+2)))}"
-  NETWORK_SUB=`echo $NETWORK_IP | cut -d\. -f1 -f2 -f3`
+  NETWORK_SUB=`echo $NETWORK_IP | cut -f1,2,3 -d\.`
   NETWORK_GW="${NETWORK_GW:-$(echo ${NETWORK_SUB}.1)}"
   tunctl -t $TAP_IFACE
   dnsmasq --user=root \
