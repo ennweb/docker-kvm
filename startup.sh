@@ -126,15 +126,25 @@ if [ "$NETWORK" == "bridge" ]; then
   echo allow $BRIDGE_IFACE >  /etc/qemu/bridge.conf
   FLAGS_NETWORK="-netdev bridge,br=${BRIDGE_IFACE},id=net0 -device virtio-net-pci,netdev=net0,mac=${MAC}"
 elif [ "$NETWORK" == "tap" ]; then
-  echo "allow $NETWORK_BRIDGE_IF" >/etc/qemu/bridge.conf
-  # Make sure we have the tun device node
-  if [ ! -e /dev/net/tun ]; then
-     set +e
-     mkdir -p /dev/net
-     mknod /dev/net/tun c 10 $(grep '\<tun\>' /proc/misc | cut -f 1 -d' ')
-     set -e
-  fi
-  FLAGS_NETWORK="-netdev bridge,br=${NETWORK_BRIDGE_IF},id=net0 -device virtio-net,netdev=net0"
+  IFACE=eth0
+  TAP_IFACE=tap0
+  IP=`ip addr show dev $IFACE | grep "inet " | awk '{print $2}' | cut -f1 -d/`
+  NAMESERVER=( `grep nameserver /etc/resolv.conf | cut -f2 -d ' '` )
+  NAMESERVERS=`echo ${NAMESERVER[*]} | sed "s/ /,/"`
+  NETWORK_IP="${NETWORK_IP:-$(echo 172.$((RANDOM%(31-16+1)+16)).$((RANDOM%256)).$((RANDOM%(254-2+1)+2)))}"
+  NETWORK_SUB=`echo $NETWORK_IP | cut -d\. -f1 -f2 -f3`
+  NETWORK_GW="${NETWORK_GW:-$(echo ${NETWORK_SUB}.1)}"
+  tunctl -t $TAP_IFACE
+  dnsmasq --user=root \
+    --dhcp-range=$NETWORK_IP,$NETWORK_IP \
+    --dhcp-option=option:router,$NETWORK_GW \
+    --dhcp-option=option:dns-server,$NAMESERVERS
+  ifconfig $TAP_IFACE $NETWORK_GW up
+  iptables -t nat -A POSTROUTING -o $IFACE -j MASQUERADE
+  iptables -I FORWARD 1 -i $TAP_IFACE -j ACCEPT
+  iptables -I FORWARD 1 -o $TAP_IFACE -m state --state RELATED,ESTABLISHED -j ACCEPT
+  iptables -t nat -I PREROUTING -d $IP -p tcp -j DNAT --to-destination $NETWORK_IP
+  FLAGS_NETWORK="-net nic,model=virtio -net tap,ifname=tap0,script=no"
 else
   NETWORK="user"
   REDIR=""

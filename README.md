@@ -12,7 +12,6 @@ docker run -v ${PWD}:/data \
     -e SMP=1 \
     -e IMAGE=/data/disk-image \
     -e ISO=http://releases.ubuntu.com/14.04.2/ubuntu-14.04.2-desktop-amd64.iso \
-    -e PORTS=22,80
     -p 2222:22 \
     -p 8080:80 \
     ennweb/kvm
@@ -29,7 +28,6 @@ docker run -v ${PWD}:/data \
     -e SMP=1 \
     -e IMAGE=gluster://server/volume/disk-image.qcow2 \
     -e ISO=gluster://server/volume/cd-image.iso \
-    -e PORTS=22,80
     -p 2222:22 \
     -p 8080:80 \
     ennweb/kvm
@@ -46,7 +44,6 @@ docker run -v ${PWD}:/data \
     -e SMP=1 \
     -e IMAGE=/data/disk-image \
     -e IMAGE_CREATE=1 \
-    -e PORTS=22,80
     -p 2222:22 \
     -p 8080:80 \
     ennweb/kvm
