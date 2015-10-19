@@ -42,6 +42,23 @@ if [ -n "$ISO" ]; then
   echo "parameter: ${FLAGS_ISO}"
 fi
 
+if [ -n "$ISO2" ]; then
+  echo "[iso2]"
+  if [ "${ISO2:0:1}" != "/" ] && [ "${ISO2:0:10}" != "gluster://" ]; then
+    basename=$(basename $ISO2)
+    if [ ! -f "/data/${basename}" ] || [ "$ISO_FORCE_DOWNLOAD" != "0" ]; then
+      wget -O- "$ISO2" > /data/${basename}
+    fi
+    ISO=/data/${basename}
+  fi
+  FLAGS_ISO2="-drive file=${ISO2},media=cdrom,index=3"
+  if [ "${ISO2:0:10}" != "gluster://" ] && [ ! -f "$ISO2" ]; then
+    echo "ISO2 file not found: $ISO2"
+    exit 1
+  fi
+  echo "parameter: ${FLAGS_ISO2}"
+fi
+
 echo "[disk image]"
 if [ "$IMAGE_CREATE" == "1" ]; then
   qemu-img create -f qcow2 ${IMAGE} ${IMAGE_SIZE}
@@ -173,4 +190,5 @@ exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   -name ${HOSTNAME} \
   ${FLAGS_DISK_IMAGE} \
   ${FLAGS_ISO} \
+  ${FLAGS_ISO2} \
   ${FLAGS_NETWORK}
