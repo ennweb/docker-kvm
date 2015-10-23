@@ -123,7 +123,7 @@ if [ "$NETWORK" == "bridge" ]; then
     --dhcp-option=option:dns-server,$NAMESERVERS
   hexchars="0123456789ABCDEF"
   end=$( for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g' )
-  NEWMAC=`echo 06:FE$end`
+  NEWMAC=`echo 00:F0$end`
   let "NEWCIDR=$CIDR-1"
   i=`atoi $IP`
   let "i=$i^(1<<$CIDR)"
@@ -140,7 +140,7 @@ if [ "$NETWORK" == "bridge" ]; then
     echo "Failed to bring up network bridge"
     exit 4
   fi
-  echo allow $BRIDGE_IFACE >  /etc/qemu/bridge.conf
+  echo allow $BRIDGE_IFACE > /etc/qemu/bridge.conf
   FLAGS_NETWORK="-netdev bridge,br=${BRIDGE_IFACE},id=net0 -device virtio-net-pci,netdev=net0,mac=${MAC}"
 elif [ "$NETWORK" == "tap" ]; then
   IFACE=eth0
@@ -161,7 +161,14 @@ elif [ "$NETWORK" == "tap" ]; then
   iptables -I FORWARD 1 -i $TAP_IFACE -j ACCEPT
   iptables -I FORWARD 1 -o $TAP_IFACE -m state --state RELATED,ESTABLISHED -j ACCEPT
   iptables -t nat -I PREROUTING -d $IP -p tcp -j DNAT --to-destination $NETWORK_IP
+  iptables -t nat -I PREROUTING -d $IP -p udp -j DNAT --to-destination $NETWORK_IP
   FLAGS_NETWORK="-net nic,model=virtio -net tap,ifname=tap0,script=no"
+elif [ "$NETWORK" == "host" ]; then
+  BRIDGE_IF="${BRIDGE_IF:-docker0}"
+  hexchars="0123456789ABCDEF"
+  NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
+  echo allow $BRIDGE_IF > /etc/qemu/bridge.conf
+  FLAGS_NETWORK="-netdev bridge,br=${BRIDGE_IF},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
 else
   NETWORK="user"
   REDIR=""
