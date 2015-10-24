@@ -169,6 +169,17 @@ elif [ "$NETWORK" == "host" ]; then
   NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
   echo allow $BRIDGE_IF > /etc/qemu/bridge.conf
   FLAGS_NETWORK="-netdev bridge,br=${BRIDGE_IF},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
+elif [ "$NETWORK" == "macvlan" ]; then
+  NETWORK_IF="${NETWORK_IF:-vtap0}"
+  BRIDGE_IF="${BRIDGE_IF:-eth0}"
+  hexchars="0123456789ABCDEF"
+  NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
+  ip link add link $BRIDGE_IF name $NETWORK_IF address $NETWORK_MAC type macvtap mode bridge
+  sleep 2
+  ip link set dev $NETWORK_IF up
+  TAPNUM=`cat /sys/class/net/$NETWORK_IF/ifindex`
+  chmod 666 /dev/tap$TAPNUM
+  FLAGS_NETWORK="-netdev tap,fd=3,id=net0,vhost=on -net nic,vlan=0,netdev=net0,macaddr=$NETWORK_MAC,model=virtio 3<>/dev/tap$TAPNUM"
 else
   NETWORK="user"
   REDIR=""
