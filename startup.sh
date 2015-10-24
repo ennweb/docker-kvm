@@ -174,24 +174,14 @@ elif [ "$NETWORK" == "macvtap" ]; then
   NETWORK_BRIDGE="${NETWORK_BRIDGE:-vtap0}"
   hexchars="0123456789ABCDEF"
   NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
-  if [ -n "$NETWORK_IP" ]; then
-    NAMESERVER=`grep nameserver /etc/resolv.conf | cut -f2 -d ' '`
-    NAMESERVERS=`echo ${NAMESERVER[*]} | sed "s/ /,/"`
-    NETWORK_GW="${NETWORK_GW:-$(ip route get 8.8.8.8 | grep via | cut -f3 -d ' ')}"
-    NETWORK_NETMASK="${NETWORK_NETMASK:-255.255.255.255}"
-    NETWORK_BROADCAST="${NETWORK_BROADCAST:-${NETWORK_IP}}"
-    dnsmasq --user=root \
-      --dhcp-range=$NETWORK_IP,$NETWORK_IP \
-      --dhcp-host=$NETWORK_MAC,$HOSTNAME,$NETWORK_IP,infinite \
-      --dhcp-option=option:router,$NETWORK_GW \
-      --dhcp-option=option:netmask,$NETWORK_NETMASK \
-      --dhcp-option=28,$NETWORK_BROADCAST \
-      --dhcp-option=option:dns-server,$NAMESERVERS
-  fi
   set +e
   ip link add link $NETWORK_IF name $NETWORK_BRIDGE address $NETWORK_MAC type macvtap mode bridge
+  if [[ $? -ne 0 ]]; then
+    echo "Warning! Bridge interface already exists"
+  fi
   set -e
-  FLAGS_NETWORK="-netdev tap,fd=3,id=net0,vhost=on -net nic,vlan=0,netdev=net0,macaddr=$NETWORK_MAC,model=virtio 3<>/dev/tap`cat /sys/class/net/$NETWORK_BRIDGE/ifindex`"
+  FLAGS_NETWORK="-netdev tap,fd=3,id=net0,vhost=on -net nic,vlan=0,netdev=net0,macaddr=$NETWORK_MAC,model=virtio"
+  exec 3<> /dev/tap`cat /sys/class/net/$NETWORK_BRIDGE/ifindex`
 else
   NETWORK="user"
   REDIR=""
