@@ -170,8 +170,8 @@ elif [ "$NETWORK" == "host" ]; then
   echo allow $NETWORK_BRIDGE > /etc/qemu/bridge.conf
   FLAGS_NETWORK="-netdev bridge,br=${NETWORK_BRIDGE},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
 elif [ "$NETWORK" == "macvtap" ]; then
-  NETWORK_IF="${NETWORK_IF:-vtap0}"
-  NETWORK_BRIDGE="${NETWORK_BRIDGE:-eth0}"
+  NETWORK_IF="${NETWORK_IF:-eth0}"
+  NETWORK_BRIDGE="${NETWORK_BRIDGE:-vtap0}"
   hexchars="0123456789ABCDEF"
   NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
   if [ -n "$NETWORK_IP" ]; then
@@ -189,9 +189,9 @@ elif [ "$NETWORK" == "macvtap" ]; then
       --dhcp-option=option:dns-server,$NAMESERVERS
   fi
   set +e
-  ip link add link $NETWORK_BRIDGE name $NETWORK_IF address $NETWORK_MAC type macvtap mode bridge
+  ip link add link $NETWORK_IF name $NETWORK_BRIDGE address $NETWORK_MAC type macvtap mode bridge
   set -e
-  FLAGS_NETWORK="-netdev tap,fd=3,id=net0,vhost=on -net nic,vlan=0,netdev=net0,macaddr=$NETWORK_MAC,model=virtio 3<>/dev/tap`cat /sys/class/net/$NETWORK_IF/ifindex`"
+  FLAGS_NETWORK="-netdev tap,fd=3,id=net0,vhost=on -net nic,vlan=0,netdev=net0,macaddr=$NETWORK_MAC,model=virtio 3<>/dev/tap`cat /sys/class/net/$NETWORK_BRIDGE/ifindex`"
 else
   NETWORK="user"
   REDIR=""
