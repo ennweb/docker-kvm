@@ -146,7 +146,7 @@ elif [ "$NETWORK" == "tap" ]; then
   IFACE=eth0
   TAP_IFACE=tap0
   IP=`ip addr show dev $IFACE | grep "inet " | awk '{print $2}' | cut -f1 -d/`
-  NAMESERVER=( `grep nameserver /etc/resolv.conf | cut -f2 -d ' '` )
+  NAMESERVER=`grep nameserver /etc/resolv.conf | cut -f2 -d ' '`
   NAMESERVERS=`echo ${NAMESERVER[*]} | sed "s/ /,/"`
   NETWORK_IP="${NETWORK_IP:-$(echo 172.$((RANDOM%(31-16+1)+16)).$((RANDOM%256)).$((RANDOM%(254-2+1)+2)))}"
   NETWORK_SUB=`echo $NETWORK_IP | cut -f1,2,3 -d\.`
@@ -164,21 +164,34 @@ elif [ "$NETWORK" == "tap" ]; then
   iptables -t nat -I PREROUTING -d $IP -p udp -j DNAT --to-destination $NETWORK_IP
   FLAGS_NETWORK="-net nic,model=virtio -net tap,ifname=tap0,script=no"
 elif [ "$NETWORK" == "host" ]; then
-  BRIDGE_IF="${BRIDGE_IF:-docker0}"
+  NETWORK_BRIDGE="${NETWORK_BRIDGE:-docker0}"
   hexchars="0123456789ABCDEF"
   NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
-  echo allow $BRIDGE_IF > /etc/qemu/bridge.conf
-  FLAGS_NETWORK="-netdev bridge,br=${BRIDGE_IF},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
+  echo allow $NETWORK_BRIDGE > /etc/qemu/bridge.conf
+  FLAGS_NETWORK="-netdev bridge,br=${NETWORK_BRIDGE},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
 elif [ "$NETWORK" == "macvtap" ]; then
   NETWORK_IF="${NETWORK_IF:-vtap0}"
-  BRIDGE_IF="${BRIDGE_IF:-eth0}"
+  NETWORK_BRIDGE="${NETWORK_BRIDGE:-eth0}"
   hexchars="0123456789ABCDEF"
   NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
+  if [ -n "$NETWORK_IP" ]; then
+    NAMESERVER=`grep nameserver /etc/resolv.conf | cut -f2 -d ' '`
+    NAMESERVERS=`echo ${NAMESERVER[*]} | sed "s/ /,/"`
+    NETWORK_GW="${NETWORK_GW:-$(ip route get 8.8.8.8 | grep via | cut -f3 -d ' ')}"
+    NETWORK_NETMASK="${NETWORK_NETMASK:-255.255.255.255}"
+    NETWORK_BROADCAST="${NETWORK_BROADCAST:-${NETWORK_IP}}"
+    dnsmasq --user=root \
+      --dhcp-range=$NETWORK_IP,$NETWORK_IP \
+      --dhcp-host=$NETWORK_MAC,$HOSTNAME,$NETWORK_IP,infinite \
+      --dhcp-option=option:router,$NETWORK_GW \
+      --dhcp-option=option:netmask,$NETWORK_NETMASK \
+      --dhcp-option=28,$NETWORK_BROADCAST \
+      --dhcp-option=option:dns-server,$NAMESERVERS
+  fi
   set +e
-  ip link add link $BRIDGE_IF name $NETWORK_IF address $NETWORK_MAC type macvtap mode bridge
+  ip link add link $NETWORK_BRIDGE name $NETWORK_IF address $NETWORK_MAC type macvtap mode bridge
   set -e
-  TAPNUM=`cat /sys/class/net/$NETWORK_IF/ifindex`
-  FLAGS_NETWORK="-netdev tap,fd=3,id=net0,vhost=on -net nic,vlan=0,netdev=net0,macaddr=$NETWORK_MAC,model=virtio 3<>/dev/tap$TAPNUM"
+  FLAGS_NETWORK="-netdev tap,fd=3,id=net0,vhost=on -net nic,vlan=0,netdev=net0,macaddr=$NETWORK_MAC,model=virtio 3<>/dev/tap`cat /sys/class/net/$NETWORK_IF/ifindex`"
 else
   NETWORK="user"
   REDIR=""
