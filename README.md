@@ -27,6 +27,7 @@ Boot with glusterfs volume
 docker run \
     --privileged \
     -v /dev:/dev \
+    -v ${PWD}:/data \
     -e RAM=2048 \
     -e SMP=1 \
     -e IMAGE=gluster://server/volume/disk-image.qcow2 \
@@ -44,6 +45,7 @@ Create new volume file
 docker run \
     --privileged \
     -v /dev:/dev \
+    -v ${PWD}:/data \
     -e RAM=2048 \
     -e SMP=1 \
     -e IMAGE=/data/disk-image \
