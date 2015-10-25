@@ -1,4 +1,4 @@
-FROM ubuntu:14.04.2
+FROM ubuntu:14.04.3
 MAINTAINER Emre <e@emre.pm>
 
 ENV DEBIAN_FRONTEND noninteractive
