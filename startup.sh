@@ -94,8 +94,7 @@ elif [ "$NETWORK" == "tap" ]; then
   iptables -I FORWARD 1 -i $TAP_IFACE -j ACCEPT
   iptables -I FORWARD 1 -o $TAP_IFACE -m state --state RELATED,ESTABLISHED -j ACCEPT
   if [ "$VNC" == "tcp" ]; then
-    vncport=5900+$VNC_ID
-    iptables -t nat -A PREROUTING -p tcp -d $IP ! --dport $vncport -j DNAT --to-destination $NETWORK_IP
+    iptables -t nat -A PREROUTING -p tcp -d $IP ! --dport `expr 5900 + $VNC_ID` -j DNAT --to-destination $NETWORK_IP
     iptables -t nat -A PREROUTING -p udp -d $IP -j DNAT --to-destination $NETWORK_IP
     iptables -t nat -A PREROUTING -p icmp -d $IP -j DNAT --to-destination $NETWORK_IP
   else
@@ -139,7 +138,7 @@ elif [ "$VNC" == "reverse" ]; then
 elif [ "$VNC" == "sock" ]; then
   FLAGS_REMOTE_ACCESS="-vnc unix:${VNC_SOCK}"
 else
-  FLAGS_REMOTE_ACCESS=""
+  FLAGS_REMOTE_ACCESS="-nographic"
 fi
 echo "parameter: ${FLAGS_REMOTE_ACCESS}"
 
