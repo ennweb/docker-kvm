@@ -40,6 +40,27 @@ docker run \
 ```
 
 
+Boot with rbd volume
+```
+docker run \
+    --privileged \
+    -v /dev:/dev \
+    -v /etc/ceph:/etc/ceph \
+    -v /var/lib/ceph:/var/lib/ceph \
+    -v ${PWD}:/data \
+    -e RAM=2048 \
+    -e SMP=1 \
+    -e IMAGE=rbd:data/disk-image \
+    -e IMAGE_FORMAT=raw \
+    -e ISO=rbd:data/cd-image \
+    -e VNC=tcp \
+    -p 2222:22 \
+    -p 8080:80 \
+    -p 5900:5900 \
+    ennweb/kvm
+```
+
+
 Create new volume file
 ```
 docker run \
