@@ -27,7 +27,7 @@ fi
 
 if [ -n "$ISO" ]; then
   echo "[iso]"
-  if [ "${ISO:0:1}" != "/" ] && [ "${ISO:0:10}" != "gluster://" ]; then
+  if [ "${ISO:0:1}" != "/" ] && [ "${ISO:0:10}" != "gluster://" ] && [ "${ISO:0:4}" != "rbd:" ]; then
     basename=$(basename $ISO)
     if [ ! -f "/data/${basename}" ] || [ "$ISO_DOWNLOAD" != "0" ]; then
       wget -O- "$ISO" > /data/${basename}
@@ -35,7 +35,7 @@ if [ -n "$ISO" ]; then
     ISO=/data/${basename}
   fi
   FLAGS_ISO="-drive file=${ISO},media=cdrom,index=2"
-  if [ "${ISO:0:10}" != "gluster://" ] && [ ! -f "$ISO" ]; then
+  if [ "${ISO:0:10}" != "gluster://" ] && [ "${ISO:0:4}" != "rbd:" ] && [ ! -f "$ISO" ]; then
     echo "ISO file not found: $ISO"
     exit 1
   fi
@@ -44,7 +44,7 @@ fi
 
 if [ -n "$ISO2" ]; then
   echo "[iso2]"
-  if [ "${ISO2:0:1}" != "/" ] && [ "${ISO2:0:10}" != "gluster://" ]; then
+  if [ "${ISO2:0:1}" != "/" ] && [ "${ISO2:0:10}" != "gluster://" ] && [ "${ISO:0:4}" != "rbd:" ]; then
     basename=$(basename $ISO2)
     if [ ! -f "/data/${basename}" ] || [ "$ISO_DOWNLOAD" != "0" ]; then
       wget -O- "$ISO2" > /data/${basename}
@@ -52,7 +52,7 @@ if [ -n "$ISO2" ]; then
     ISO=/data/${basename}
   fi
   FLAGS_ISO2="-drive file=${ISO2},media=cdrom,index=3"
-  if [ "${ISO2:0:10}" != "gluster://" ] && [ ! -f "$ISO2" ]; then
+  if [ "${ISO2:0:10}" != "gluster://" ] && [ "${ISO:0:4}" != "rbd:" ] && [ ! -f "$ISO2" ]; then
     echo "ISO2 file not found: $ISO2"
     exit 1
   fi
@@ -61,11 +61,11 @@ fi
 
 echo "[disk image]"
 if [ "$IMAGE_CREATE" == "1" ]; then
-  qemu-img create -f qcow2 ${IMAGE} ${IMAGE_SIZE}
-elif [ "${IMAGE:0:10}" != "gluster://" ] && [ ! -f "$IMAGE" ]; then
+  qemu-img create -f ${IMAGE_FORMAT} ${IMAGE} ${IMAGE_SIZE}
+elif [ "${IMAGE:0:10}" != "gluster://" ] && [ "${ISO:0:4}" != "rbd:" ] && [ ! -f "$IMAGE" ]; then
   echo "IMAGE not found: ${IMAGE}"; exit 1;
 fi
-FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=none,format=${IMAGE_FORMAT},index=1"
+FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=${IMAGE_CACHE},format=${IMAGE_FORMAT},index=1"
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
 echo "[network]"
