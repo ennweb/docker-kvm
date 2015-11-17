@@ -25,6 +25,14 @@ if [ ! -d /data ]; then
   fi
 fi
 
+if [ -n "$CPU" ]; then
+  echo "[cpu]"
+  FLAGS_CPU="${CPU}"
+  echo "parameter: ${FLAGS_CPU}"
+else
+  FLAGS_CPU="qemu64"
+fi
+
 if [ -n "$ISO" ]; then
   echo "[iso]"
   if [ "${ISO:0:1}" != "/" ] && [ "${ISO:0:10}" != "gluster://" ] && [ "${ISO:0:4}" != "rbd:" ]; then
@@ -144,7 +152,7 @@ echo "parameter: ${FLAGS_REMOTE_ACCESS}"
 
 set -x
 exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
-  -k en-us -m ${RAM} -smp ${SMP} -cpu qemu64 -usb -usbdevice tablet -no-shutdown \
+  -k en-us -m ${RAM} -smp ${SMP} -cpu ${FLAGS_CPU} -usb -usbdevice tablet -no-shutdown \
   -name ${HOSTNAME} \
   ${FLAGS_DISK_IMAGE} \
   ${FLAGS_ISO} \
