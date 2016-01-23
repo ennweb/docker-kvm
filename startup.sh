@@ -122,6 +122,18 @@ elif [ "$NETWORK" == "macvtap" ]; then
   set -e
   FLAGS_NETWORK="-netdev tap,fd=3,id=net0,vhost=on -net nic,vlan=0,netdev=net0,macaddr=$NETWORK_MAC,model=virtio"
   exec 3<> /dev/tap`cat /sys/class/net/$NETWORK_BRIDGE/ifindex`
+  if [ ! -z "$NETWORK_IF2" ]; then
+    NETWORK_BRIDGE2="${NETWORK_BRIDGE2:-vtap1}"
+    NETWORK_MAC2="${NETWORK_MAC2:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
+    set +e
+    ip link add link $NETWORK_IF2 name $NETWORK_BRIDGE2 address $NETWORK_MAC2 type macvtap mode bridge
+    if [[ $? -ne 0 ]]; then
+      echo "Warning! Bridge interface 2 already exists"
+    fi
+    set -e
+    FLAGS_NETWORK="${FLAGS_NETWORK} -netdev tap,fd=4,id=net1,vhost=on -net nic,vlan=1,netdev=net1,macaddr=$NETWORK_MAC2,model=virtio"
+    exec 4<> /dev/tap`cat /sys/class/net/$NETWORK_BRIDGE2/ifindex`
+  fi
 else
   NETWORK="user"
   REDIR=""
