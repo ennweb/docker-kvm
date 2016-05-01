@@ -4,16 +4,16 @@ MAINTAINER Emre <e@emre.pm>
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN \
-  echo deb http://ppa.launchpad.net/monotek/qemu-glusterfs-3.6/ubuntu trusty main >> /etc/apt/sources.list && \
-  echo deb-src http://ppa.launchpad.net/monotek/qemu-glusterfs-3.6/ubuntu trusty main >> /etc/apt/sources.list && \
-  echo deb http://ppa.launchpad.net/gluster/glusterfs-3.6/ubuntu trusty main >> /etc/apt/sources.list && \
-  echo deb-src http://ppa.launchpad.net/gluster/glusterfs-3.6/ubuntu trusty main >> /etc/apt/sources.list
+  echo deb http://ppa.launchpad.net/monotek/qemu-glusterfs-3.7/ubuntu trusty main >> /etc/apt/sources.list && \
+  echo deb-src http://ppa.launchpad.net/monotek/qemu-glusterfs-3.7/ubuntu trusty main >> /etc/apt/sources.list && \
+  echo deb http://ppa.launchpad.net/gluster/glusterfs-3.7/ubuntu trusty main >> /etc/apt/sources.list && \
+  echo deb-src http://ppa.launchpad.net/gluster/glusterfs-3.7/ubuntu trusty main >> /etc/apt/sources.list
 
 RUN \
   echo Package: qemu-common qemu-guest-agent qemu-keymaps qemu-kvm qemu-system-arm qemu-system-common \
     qemu-system-mips qemu-system-ppc qemu-system-misc qemu-system-sparc qemu-system-x86 qemu-system \
     qemu-user-static qemu-user qemu-utils qemu > /etc/apt/preferences.d/qemu && \
-  echo Pin: release o=LP-PPA-monotek-qemu-glusterfs-3.6 >> /etc/apt/preferences.d/qemu && \
+  echo Pin: release o=LP-PPA-monotek-qemu-glusterfs-3.7 >> /etc/apt/preferences.d/qemu && \
   echo Pin-Priority: 1000 >> /etc/apt/preferences.d/qemu
 
 RUN \
