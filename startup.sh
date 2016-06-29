@@ -73,7 +73,11 @@ if [ "$IMAGE_CREATE" == "1" ]; then
 elif [ "${IMAGE:0:10}" != "gluster://" ] && [ "${IMAGE:0:4}" != "rbd:" ] && [ ! -f "$IMAGE" ]; then
   echo "IMAGE not found: ${IMAGE}"; exit 1;
 fi
-FLAGS_DISK_IMAGE="-device virtio-scsi-pci,id=scsi -drive file=${IMAGE},if=none,id=hd,cache=${IMAGE_CACHE},discard=${IMAGE_DISCARD},index=1 -device scsi-hd,drive=hd"
+if [ "$DISK_DEVICE" == "scsi" ]; then
+  FLAGS_DISK_IMAGE="-device virtio-scsi-pci,id=scsi -drive file=${IMAGE},if=none,id=hd,cache=${IMAGE_CACHE},discard=${IMAGE_DISCARD},index=1 -device scsi-hd,drive=hd"
+else
+  FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=${IMAGE_CACHE},format=${IMAGE_FORMAT},index=1"
+fi
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
 echo "[network]"

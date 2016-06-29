@@ -30,6 +30,7 @@ ADD startup.sh /
 ENV RAM 2048
 ENV SMP 1
 ENV CPU qemu64
+ENV DISK_DEVICE scsi
 ENV IMAGE /data/disk-image
 ENV IMAGE_FORMAT qcow2
 ENV IMAGE_SIZE 10G
