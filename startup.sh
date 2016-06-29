@@ -88,7 +88,7 @@ elif [ "$NETWORK" == "tap" ]; then
   TAP_IFACE=tap0
   IP=`ip addr show dev $IFACE | grep "inet " | awk '{print $2}' | cut -f1 -d/`
   NAMESERVER=`grep nameserver /etc/resolv.conf | cut -f2 -d ' '`
-  NAMESERVERS=`echo ${NAMESERVER[*]} | sed "s/ /,/"`
+  NAMESERVERS=`echo ${NAMESERVER[*]} | sed "s/ /,/g"`
   NETWORK_IP="${NETWORK_IP:-$(echo 172.$((RANDOM%(31-16+1)+16)).$((RANDOM%256)).$((RANDOM%(254-2+1)+2)))}"
   NETWORK_SUB=`echo $NETWORK_IP | cut -f1,2,3 -d\.`
   NETWORK_GW="${NETWORK_GW:-$(echo ${NETWORK_SUB}.1)}"
