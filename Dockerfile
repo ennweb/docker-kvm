@@ -1,24 +1,9 @@
-FROM ubuntu:14.04.3
+FROM ubuntu:16.04
 MAINTAINER Emre <e@emre.pm>
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN \
-  echo deb http://ppa.launchpad.net/monotek/qemu-glusterfs-3.7/ubuntu trusty main >> /etc/apt/sources.list && \
-  echo deb-src http://ppa.launchpad.net/monotek/qemu-glusterfs-3.7/ubuntu trusty main >> /etc/apt/sources.list && \
-  echo deb http://ppa.launchpad.net/gluster/glusterfs-3.7/ubuntu trusty main >> /etc/apt/sources.list && \
-  echo deb-src http://ppa.launchpad.net/gluster/glusterfs-3.7/ubuntu trusty main >> /etc/apt/sources.list
-
-RUN \
-  echo Package: qemu-common qemu-guest-agent qemu-keymaps qemu-kvm qemu-system-arm qemu-system-common \
-    qemu-system-mips qemu-system-ppc qemu-system-misc qemu-system-sparc qemu-system-x86 qemu-system \
-    qemu-user-static qemu-user qemu-utils qemu > /etc/apt/preferences.d/qemu && \
-  echo Pin: release o=LP-PPA-monotek-qemu-glusterfs-3.7 >> /etc/apt/preferences.d/qemu && \
-  echo Pin-Priority: 1000 >> /etc/apt/preferences.d/qemu
-
-RUN \
-  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 13E01B7B3FE869A9 && \
-  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 211F871AB39B9849 && \
   apt-get update && \
   apt-get install -y qemu-kvm qemu-utils bridge-utils dnsmasq uml-utilities iptables wget && \
   apt-get autoclean && \

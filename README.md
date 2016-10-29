@@ -22,24 +22,6 @@ docker run \
 ```
 
 
-Boot with glusterfs volume
-```
-docker run \
-    --privileged \
-    -v /dev:/dev \
-    -v ${PWD}:/data \
-    -e RAM=2048 \
-    -e SMP=1 \
-    -e IMAGE=gluster://server/volume/disk-image.qcow2 \
-    -e ISO=gluster://server/volume/cd-image.iso \
-    -e VNC=tcp \
-    -p 2222:22 \
-    -p 8080:80 \
-    -p 5900:5900 \
-    ennweb/kvm
-```
-
-
 Boot with rbd volume
 ```
 docker run \
