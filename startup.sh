@@ -141,11 +141,20 @@ elif [ "$NETWORK" == "macvtap" ]; then
 else
   NETWORK="user"
   REDIR=""
-  if [ ! -z "$PORTS" ]; then
+  if [ ! -z "$TCP_PORTS" ]; then
     OIFS=$IFS
     IFS=","
-    for port in $PORTS; do
+    for port in $TCP_PORTS; do
       REDIR+="-redir tcp:${port}::${port} "
+    done
+    IFS=$OIFS
+  fi
+  
+  if [ ! -z "$UDP_PORTS" ]; then
+    OIFS=$IFS
+    IFS=","
+    for port in $UDP_PORTS; do
+      REDIR+="-redir udp:${port}::${port} "
     done
     IFS=$OIFS
   fi
