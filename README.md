@@ -72,7 +72,7 @@ docker run \
 `-e NETWORK=macvtap --net=host -e NETWORK_IF=eth0 -e NETWORK_BRIDGE=vtap0 -e NETWORK_MAC=01:02:03:04:05`
 > Creates a macvtap device called vtap0 and will setup bridge with your external interface eth0. `--net=host` is required for this mode. Mac address is optional.
 
-`-e NETWORK=user -e PORTS=22,80`
+`-e NETWORK=user -e TCP_PORTS=22,80`
 > Enables qemu user networking. Also redirects ports 22 and 80 to vm.
 
 
