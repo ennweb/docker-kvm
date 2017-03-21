@@ -187,6 +187,12 @@ if [ -n "$BOOT" ]; then
   echo "parameter: ${FLAGS_BOOT}"
 fi
 
+if [ -n "$KEYBOARD" ]; then
+  echo "[keyboard]"
+  FLAGS_KEYBOARD="-k ${KEYBOARD}"
+  echo "parameter: ${FLAGS_KEYBOARD}"
+fi
+
 set -x
 exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   -k en-us -m ${RAM} -smp ${SMP} -cpu ${FLAGS_CPU} -usb -usbdevice tablet -no-shutdown \
@@ -196,4 +202,5 @@ exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   ${FLAGS_ISO} \
   ${FLAGS_ISO2} \
   ${FLAGS_NETWORK} \
+  ${FLAGS_KEYBOARD} \
   ${FLAGS_BOOT}
