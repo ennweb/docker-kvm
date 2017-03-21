@@ -175,6 +175,12 @@ else
 fi
 echo "parameter: ${FLAGS_REMOTE_ACCESS}"
 
+if [ -n "$BOOT" ]; then
+  echo "[boot]"
+  FLAGS_BOOT="-boot ${BOOT}"
+  echo "parameter: ${FLAGS_BOOT}"
+fi
+
 set -x
 exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   -k en-us -m ${RAM} -smp ${SMP} -cpu ${FLAGS_CPU} -usb -usbdevice tablet -no-shutdown \
@@ -182,4 +188,5 @@ exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   ${FLAGS_DISK_IMAGE} \
   ${FLAGS_ISO} \
   ${FLAGS_ISO2} \
-  ${FLAGS_NETWORK}
+  ${FLAGS_NETWORK} \
+  ${FLAGS_BOOT}
