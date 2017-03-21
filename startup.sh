@@ -80,6 +80,12 @@ else
 fi
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
+if [ -n "$FLOPPY" ]; then
+  echo "[floppy image]"
+  FLAGS_FLOPPY_IMAGE="-fda ${FLOPPY}"
+  echo "parameter: ${FLAGS_FLOPPY_IMAGE}"
+fi
+
 echo "[network]"
 if [ "$NETWORK" == "bridge" ]; then
   NETWORK_BRIDGE="${NETWORK_BRIDGE:-docker0}"
@@ -186,6 +192,7 @@ exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
   -k en-us -m ${RAM} -smp ${SMP} -cpu ${FLAGS_CPU} -usb -usbdevice tablet -no-shutdown \
   -name ${HOSTNAME} \
   ${FLAGS_DISK_IMAGE} \
+  ${FLAGS_FLOPPY_IMAGE} \
   ${FLAGS_ISO} \
   ${FLAGS_ISO2} \
   ${FLAGS_NETWORK} \
