@@ -76,7 +76,7 @@ fi
 if [ "$DISK_DEVICE" == "scsi" ]; then
   FLAGS_DISK_IMAGE="-device virtio-scsi-pci,id=scsi -drive file=${IMAGE},if=none,id=hd,cache=${IMAGE_CACHE},discard=${IMAGE_DISCARD},index=1 -device scsi-hd,drive=hd"
 else
-  FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=virtio,cache=${IMAGE_CACHE},format=${IMAGE_FORMAT},index=1"
+  FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=${DISK_DEVICE},cache=${IMAGE_CACHE},format=${IMAGE_FORMAT},index=1"
 fi
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
