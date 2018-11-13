@@ -118,7 +118,7 @@ elif [ "$NETWORK" == "tap" ]; then
   else
     iptables -t nat -A PREROUTING -d $IP -j DNAT --to-destination $NETWORK_IP
   fi
-  FLAGS_NETWORK="-net nic,model=virtio -net tap,ifname=tap0,script=no"
+  FLAGS_NETWORK="-netdev tap,id=net0,ifname=tap0,vhost=on,script=no,downscript=no -device virtio-net-pci,netdev=net0"
 elif [ "$NETWORK" == "macvtap" ]; then
   NETWORK_IF="${NETWORK_IF:-eth0}"
   NETWORK_BRIDGE="${NETWORK_BRIDGE:-vtap0}"
