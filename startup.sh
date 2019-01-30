@@ -57,7 +57,7 @@ if [ -n "$ISO2" ]; then
     if [ ! -f "/data/${basename}" ] || [ "$ISO_DOWNLOAD" != "0" ]; then
       wget -O- "$ISO2" > /data/${basename}
     fi
-    ISO=/data/${basename}
+    ISO2=/data/${basename}
   fi
   FLAGS_ISO2="-drive file=${ISO2},media=cdrom,index=3"
   if [ "${ISO2:0:4}" != "rbd:" ] && [ ! -f "$ISO2" ]; then
