@@ -60,6 +60,22 @@ docker run \
     ennweb/kvm
 ```
 
+Boot in rootless Podman environment
+```
+docker run \
+    --privileged \
+    -v ${PWD}/data:/data \
+    -e CPU=Nehalem \
+    -e SMP=4 \
+    -e RAM=4096 \
+    -e ISO=/data/cd-image.iso \
+    -e IMAGE_CREATE=1 \
+    -e IMAGE=/data/hd-image.qcow2 \
+    -e VNC=tcp \
+    -p 127.0.0.1:5900:5900 \
+    -e NETWORK_IF=tap0 \
+    ennweb/kvm
+```
 
 ## Network modes
 

@@ -4,6 +4,8 @@ set -e
 
 [ -n "$DEBUG" ] && set -x
 
+QEMU_BINARY="/usr/bin/qemu-system-x86_64"
+
 # Create the kvm node (required --privileged)
 if [ ! -e /dev/kvm ]; then
   set +e
@@ -13,7 +15,7 @@ fi
 
 # If we were given arguments, override the default configuration
 if [ $# -gt 0 ]; then
-  exec /usr/bin/kvm $@
+  exec ${QEMU_BINARY} $@
   exit $?
 fi
 
@@ -31,6 +33,14 @@ if [ -n "$CPU" ]; then
   echo "parameter: ${FLAGS_CPU}"
 else
   FLAGS_CPU="qemu64"
+fi
+
+if [ -n "$ACCEL" ]; then
+  echo "[accel]"
+  FLAGS_ACCEL="-accel ${ACCEL}"
+  echo "parameter: ${FLAGS_ACCEL}"
+else
+  $QEMU_BINARY -accel ? | grep -q "kvm" && FLAGS_ACCEL="-accel kvm"
 fi
 
 if [ -n "$ISO" ]; then
@@ -87,6 +97,8 @@ if [ -n "$FLOPPY" ]; then
 fi
 
 echo "[network]"
+echo "1" > /proc/sys/net/ipv4/ip_forward
+NETWORK_IF="${NETWORK_IF:-eth0}"
 if [ "$NETWORK" == "bridge" ]; then
   NETWORK_BRIDGE="${NETWORK_BRIDGE:-docker0}"
   hexchars="0123456789ABCDEF"
@@ -94,9 +106,8 @@ if [ "$NETWORK" == "bridge" ]; then
   echo allow $NETWORK_BRIDGE > /etc/qemu/bridge.conf
   FLAGS_NETWORK="-netdev bridge,br=${NETWORK_BRIDGE},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
 elif [ "$NETWORK" == "tap" ]; then
-  IFACE=eth0
-  TAP_IFACE=tap0
-  IP=`ip addr show dev $IFACE | grep "inet " | awk '{print $2}' | cut -f1 -d/`
+  TAP_IFACE=tap_guest
+  IP=`ip addr show dev $NETWORK_IF | grep "inet " | awk '{print $2}' | cut -f1 -d/`
   NAMESERVER=`grep nameserver /etc/resolv.conf | cut -f2 -d ' '`
   NAMESERVERS=`echo ${NAMESERVER[*]} | sed "s/ /,/g"`
   NETWORK_IP="${NETWORK_IP:-$(echo 172.$((RANDOM%(31-16+1)+16)).$((RANDOM%256)).$((RANDOM%(254-2+1)+2)))}"
@@ -108,7 +119,7 @@ elif [ "$NETWORK" == "tap" ]; then
     --dhcp-option=option:router,$NETWORK_GW \
     --dhcp-option=option:dns-server,$NAMESERVERS
   ifconfig $TAP_IFACE $NETWORK_GW up
-  iptables -t nat -A POSTROUTING -o $IFACE -j MASQUERADE
+  iptables -t nat -A POSTROUTING -o $NETWORK_IF -j MASQUERADE
   iptables -I FORWARD 1 -i $TAP_IFACE -j ACCEPT
   iptables -I FORWARD 1 -o $TAP_IFACE -m state --state RELATED,ESTABLISHED -j ACCEPT
   if [ "$VNC" == "tcp" ]; then
@@ -118,9 +129,8 @@ elif [ "$NETWORK" == "tap" ]; then
   else
     iptables -t nat -A PREROUTING -d $IP -j DNAT --to-destination $NETWORK_IP
   fi
-  FLAGS_NETWORK="-netdev tap,id=net0,ifname=tap0,vhost=on,script=no,downscript=no -device virtio-net-pci,netdev=net0"
+  FLAGS_NETWORK="-netdev tap,id=net0,ifname=${TAP_IFACE},vhost=on,script=no,downscript=no -device virtio-net-pci,netdev=net0"
 elif [ "$NETWORK" == "macvtap" ]; then
-  NETWORK_IF="${NETWORK_IF:-eth0}"
   NETWORK_BRIDGE="${NETWORK_BRIDGE:-vtap0}"
   hexchars="0123456789ABCDEF"
   NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
@@ -196,7 +206,7 @@ if [ -n "$KEYBOARD" ]; then
 fi
 
 set -x
-exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
+exec ${QEMU_BINARY} ${FLAGS_ACCEL} ${FLAGS_REMOTE_ACCESS} \
   -k en-us -m ${RAM} -smp ${SMP} -cpu ${FLAGS_CPU} -usb -usbdevice tablet -no-shutdown \
   -name ${HOSTNAME} \
   ${FLAGS_DISK_IMAGE} \
