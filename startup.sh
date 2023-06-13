@@ -4,8 +4,6 @@ set -e
 
 [ -n "$DEBUG" ] && set -x
 
-QEMU_BINARY="/usr/bin/qemu-system-x86_64"
-
 # Create the kvm node (required --privileged)
 if [ ! -e /dev/kvm ]; then
   set +e
@@ -22,17 +20,9 @@ fi
 # mountpoint check
 if [ ! -d /data ]; then
   if [ "${ISO:0:1}" != "/" ] || [ -z "$IMAGE" ]; then
-    echo "/data not mounted: using -v to mount it"
+    echo "/data not mounted: use -v to mount it"
     exit 1
   fi
-fi
-
-if [ -n "$CPU" ]; then
-  echo "[cpu]"
-  FLAGS_CPU="${CPU}"
-  echo "parameter: ${FLAGS_CPU}"
-else
-  FLAGS_CPU="qemu64"
 fi
 
 if [ -n "$ACCEL" ]; then
@@ -41,6 +31,30 @@ if [ -n "$ACCEL" ]; then
   echo "parameter: ${FLAGS_ACCEL}"
 else
   $QEMU_BINARY -accel ? | grep -q "kvm" && FLAGS_ACCEL="-accel kvm"
+fi
+
+if [ -n "$CPU" ]; then
+  echo "[cpu]"
+  FLAGS_CPU="-cpu ${CPU}"
+  echo "parameter: ${FLAGS_CPU}"
+else
+  FLAGS_CPU="-cpu qemu64"
+fi
+
+if [ -n "$SMP" ]; then
+  echo "[smp]"
+  FLAGS_SMP="-smp ${SMP}"
+  echo "parameter: ${FLAGS_SMP}"
+else
+  FLAGS_SMP="-smp 1"
+fi
+
+if [ -n "$RAM" ]; then
+  echo "[ram]"
+  FLAGS_RAM="-m ${RAM}"
+  echo "parameter: ${FLAGS_RAM}"
+else
+  FLAGS_RAM="-m 2048"
 fi
 
 if [ -n "$ISO" ]; then
@@ -182,7 +196,7 @@ fi
 echo "Using ${NETWORK}"
 echo "parameter: ${FLAGS_NETWORK}"
 
-echo "[Remote Access]"
+echo "[remote access]"
 if [ "$VNC" == "tcp" ]; then
   FLAGS_REMOTE_ACCESS="-vnc ${VNC_IP}:${VNC_ID}"
 elif [ "$VNC" == "reverse" ]; then
@@ -206,14 +220,53 @@ if [ -n "$KEYBOARD" ]; then
   echo "parameter: ${FLAGS_KEYBOARD}"
 fi
 
+if [ -n "$KEYBOARD_LAYOUT" ]; then
+  echo "[keyboard layout]"
+  FLAGS_KEYBOARD_LAYOUT="-k ${KEYBOARD_LAYOUT}"
+  echo "parameter: ${FLAGS_KEYBOARD_LAYOUT}"
+else
+  FLAGS_KEYBOARD_LAYOUT="-k en-us"
+fi
+
+if [ -n "$USB_DEVICES" ]; then
+  echo "[usb devices]"
+  FLAGS_USB_DEVICES="-usb ${USB_DEVICES}"
+  echo "parameter: ${FLAGS_USB_DEVICES}"
+else
+  FLAGS_USB_DEVICES="-usb -usbdevice tablet"
+fi
+
+if [ -n "$NAME" ]; then
+  echo "[name]"
+  FLAGS_NAME="-name $NAME"
+  echo "parameter: ${FLAGS_NAME}"
+else
+  FLAGS_NAME="-name ${HOSTNAME:-guest}"
+fi
+
+if [ -n "$EXTRA_ARGS" ]; then
+  echo "[extra args]"
+  FLAGS_EXTRA="-no-shutdown ${EXTRA_ARGS}"
+  echo "parameter: ${EXTRA_ARGS}"
+else
+  FLAGS_EXTRA="-no-shutdown"
+fi
+
 set -x
-exec ${QEMU_BINARY} ${FLAGS_ACCEL} ${FLAGS_REMOTE_ACCESS} \
-  -k en-us -m ${RAM} -smp ${SMP} -cpu ${FLAGS_CPU} -usb -usbdevice tablet -no-shutdown \
-  -name ${HOSTNAME} \
+exec ${QEMU_BINARY} \
+  ${FLAGS_ACCEL} \
+  ${FLAGS_CPU} \
+  ${FLAGS_SMP} \
+  ${FLAGS_RAM} \
+  ${FLAGS_REMOTE_ACCESS} \
   ${FLAGS_DISK_IMAGE} \
   ${FLAGS_FLOPPY_IMAGE} \
   ${FLAGS_ISO} \
   ${FLAGS_ISO2} \
   ${FLAGS_NETWORK} \
   ${FLAGS_KEYBOARD} \
-  ${FLAGS_BOOT}
+  ${FLAGS_BOOT} \
+  ${FLAGS_KEYBOARD_LAYOUT} \
+  ${FLAGS_USB_DEVICES} \
+  ${FLAGS_NAME} \
+  ${FLAGS_EXTRA}
