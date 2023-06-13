@@ -103,6 +103,7 @@ if [ "$NETWORK" == "bridge" ]; then
   NETWORK_BRIDGE="${NETWORK_BRIDGE:-docker0}"
   hexchars="0123456789ABCDEF"
   NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
+  mkdir -p /etc/qemu
   echo allow $NETWORK_BRIDGE > /etc/qemu/bridge.conf
   FLAGS_NETWORK="-netdev bridge,br=${NETWORK_BRIDGE},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
 elif [ "$NETWORK" == "tap" ]; then
@@ -167,7 +168,7 @@ else
     done
     IFS=$OIFS
   fi
-  
+
   if [ ! -z "$UDP_PORTS" ]; then
     OIFS=$IFS
     IFS=","
