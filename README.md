@@ -79,8 +79,19 @@ docker run \
 
 ## Network modes
 
-`-e NETWORK=bridge --net=host -e NETWORK_BRIDGE=docker0 -e NETWORK_MAC=01:02:03:04:05`
-> Bridge mode will be enabled with docker0 interface. `--net=host` is required for this mode. Mac address is optional.
+`-e NETWORK=bridge --net=host -e NETWORK_BRIDGE=vmbr0 -e NETWORK_MAC=01:02:03:04:05`
+> Bridge mode will be enabled with vmbr0 interface. `--net=host` is required for this mode. Mac address is optional.
+
+`-e NETWORK=routed --net=host -e NETWORK_BRIDGE=br-guest -e NETWORK_IP=10.0.0.1 -e NETWORK_ROUTE=123.123.123.123 -e NETWORK_MAC=01:02:03:04:05`
+> Routed mode will be enabled with br-guest interface. Bridge device will be created and routed to 123.123.123.123 (can be a list with comma separated IPs). `--net=host` is required for this mode. Mac address is optional. (This mode can be used for OVH/SoYouStart servers with additional IPs)
+> Example guest configuration:
+> ```
+> iface ens4 inet static
+>  address 123.123.123.123
+>  netmask 255.255.255.255
+>  gateway 10.0.0.1
+>  dns-nameservers 8.8.8.8
+> ```
 
 `-e NETWORK=tap`
 > Enables NAT and port forwarding with tap device

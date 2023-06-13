@@ -112,12 +112,34 @@ fi
 
 echo "[network]"
 echo "1" > /proc/sys/net/ipv4/ip_forward
+hexchars="0123456789ABCDEF"
 NETWORK_IF="${NETWORK_IF:-eth0}"
+NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
+NETWORK_MAC2="${NETWORK_MAC2:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
 if [ "$NETWORK" == "bridge" ]; then
-  NETWORK_BRIDGE="${NETWORK_BRIDGE:-docker0}"
-  hexchars="0123456789ABCDEF"
-  NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
   mkdir -p /etc/qemu
+  NETWORK_BRIDGE="${NETWORK_BRIDGE:-vmbr0}"
+  echo allow $NETWORK_BRIDGE > /etc/qemu/bridge.conf
+  FLAGS_NETWORK="-netdev bridge,br=${NETWORK_BRIDGE},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
+elif [ "$NETWORK" == "routed" ]; then
+  mkdir -p /etc/qemu
+  NETWORK_BRIDGE="${NETWORK_BRIDGE:-vmbr0}"
+  NETWORK_IP="${NETWORK_IP:-10.0.0.1}"
+  NETWORK_SUB=`echo $NETWORK_IP | cut -f1,2,3 -d\.`
+  NETWORK_BROADCAST="${NETWORK_BROADCAST:-$(echo ${NETWORK_SUB}.255)}"
+  set +e
+  brctl addbr $NETWORK_BRIDGE 2>/dev/null
+  if [[ $? -ne 0 ]]; then
+    echo "Warning! Bridge interface already exists"
+  fi
+  set -e
+  brctl stp $NETWORK_BRIDGE off
+  brctl setfd $NETWORK_BRIDGE 0
+  ip addr add $NETWORK_IP/24 brd $NETWORK_BROADCAST scope global dev $NETWORK_BRIDGE 2>/dev/null || true
+  ip link set dev $NETWORK_BRIDGE up
+  for ip in $(echo $NETWORK_ROUTE | tr "," "\n"); do
+    ip route add $ip dev $NETWORK_BRIDGE 2>/dev/null || true
+  done
   echo allow $NETWORK_BRIDGE > /etc/qemu/bridge.conf
   FLAGS_NETWORK="-netdev bridge,br=${NETWORK_BRIDGE},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
 elif [ "$NETWORK" == "tap" ]; then
@@ -147,8 +169,6 @@ elif [ "$NETWORK" == "tap" ]; then
   FLAGS_NETWORK="-netdev tap,id=net0,ifname=${TAP_IFACE},vhost=on,script=no,downscript=no -device virtio-net-pci,netdev=net0"
 elif [ "$NETWORK" == "macvtap" ]; then
   NETWORK_BRIDGE="${NETWORK_BRIDGE:-vtap0}"
-  hexchars="0123456789ABCDEF"
-  NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
   set +e
   ip link add link $NETWORK_IF name $NETWORK_BRIDGE address $NETWORK_MAC type macvtap mode bridge
   if [[ $? -ne 0 ]]; then
@@ -160,7 +180,6 @@ elif [ "$NETWORK" == "macvtap" ]; then
   ip link set $NETWORK_BRIDGE up
   if [ ! -z "$NETWORK_IF2" ]; then
     NETWORK_BRIDGE2="${NETWORK_BRIDGE2:-vtap1}"
-    NETWORK_MAC2="${NETWORK_MAC2:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
     set +e
     ip link add link $NETWORK_IF2 name $NETWORK_BRIDGE2 address $NETWORK_MAC2 type macvtap mode bridge
     if [[ $? -ne 0 ]]; then
