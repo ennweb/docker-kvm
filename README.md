@@ -84,7 +84,8 @@ docker run \
 
 `-e NETWORK=routed --net=host -e NETWORK_BRIDGE=br-guest -e NETWORK_IP=10.0.0.1 -e NETWORK_ROUTE=123.123.123.123 -e NETWORK_MAC=01:02:03:04:05`
 > Routed mode will be enabled with br-guest interface. Bridge device will be created and routed to 123.123.123.123 (can be a list with comma separated IPs). `--net=host` is required for this mode. Mac address is optional. (This mode can be used for OVH/SoYouStart servers with additional IPs)
-> Example guest configuration:
+>
+> Example guest network configuration:
 > ```
 > iface ens4 inet static
 >  address 123.123.123.123
