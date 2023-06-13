@@ -13,24 +13,48 @@ fi
 
 # If we were given arguments, override the default configuration
 if [ $# -gt 0 ]; then
-  exec /usr/bin/kvm $@
+  exec ${QEMU_BINARY} $@
   exit $?
 fi
 
 # mountpoint check
 if [ ! -d /data ]; then
   if [ "${ISO:0:1}" != "/" ] || [ -z "$IMAGE" ]; then
-    echo "/data not mounted: using -v to mount it"
+    echo "/data not mounted: use -v to mount it"
     exit 1
   fi
 fi
 
+if [ -n "$ACCEL" ]; then
+  echo "[accel]"
+  FLAGS_ACCEL="-accel ${ACCEL}"
+  echo "parameter: ${FLAGS_ACCEL}"
+else
+  $QEMU_BINARY -accel ? | grep -q "kvm" && FLAGS_ACCEL="-accel kvm"
+fi
+
 if [ -n "$CPU" ]; then
   echo "[cpu]"
-  FLAGS_CPU="${CPU}"
+  FLAGS_CPU="-cpu ${CPU}"
   echo "parameter: ${FLAGS_CPU}"
 else
-  FLAGS_CPU="qemu64"
+  FLAGS_CPU="-cpu qemu64"
+fi
+
+if [ -n "$SMP" ]; then
+  echo "[smp]"
+  FLAGS_SMP="-smp ${SMP}"
+  echo "parameter: ${FLAGS_SMP}"
+else
+  FLAGS_SMP="-smp 1"
+fi
+
+if [ -n "$RAM" ]; then
+  echo "[ram]"
+  FLAGS_RAM="-m ${RAM}"
+  echo "parameter: ${FLAGS_RAM}"
+else
+  FLAGS_RAM="-m 2048"
 fi
 
 if [ -n "$ISO" ]; then
@@ -87,6 +111,8 @@ if [ -n "$FLOPPY" ]; then
 fi
 
 echo "[network]"
+echo "1" > /proc/sys/net/ipv4/ip_forward
+NETWORK_IF="${NETWORK_IF:-eth0}"
 if [ "$NETWORK" == "bridge" ]; then
   NETWORK_BRIDGE="${NETWORK_BRIDGE:-docker0}"
   hexchars="0123456789ABCDEF"
@@ -95,9 +121,8 @@ if [ "$NETWORK" == "bridge" ]; then
   echo allow $NETWORK_BRIDGE > /etc/qemu/bridge.conf
   FLAGS_NETWORK="-netdev bridge,br=${NETWORK_BRIDGE},id=net0 -device virtio-net,netdev=net0,mac=${NETWORK_MAC}"
 elif [ "$NETWORK" == "tap" ]; then
-  IFACE=eth0
-  TAP_IFACE=tap0
-  IP=`ip addr show dev $IFACE | grep "inet " | awk '{print $2}' | cut -f1 -d/`
+  TAP_IFACE=tap_guest
+  IP=`ip addr show dev $NETWORK_IF | grep "inet " | awk '{print $2}' | cut -f1 -d/`
   NAMESERVER=`grep nameserver /etc/resolv.conf | cut -f2 -d ' '`
   NAMESERVERS=`echo ${NAMESERVER[*]} | sed "s/ /,/g"`
   NETWORK_IP="${NETWORK_IP:-$(echo 172.$((RANDOM%(31-16+1)+16)).$((RANDOM%256)).$((RANDOM%(254-2+1)+2)))}"
@@ -109,7 +134,7 @@ elif [ "$NETWORK" == "tap" ]; then
     --dhcp-option=option:router,$NETWORK_GW \
     --dhcp-option=option:dns-server,$NAMESERVERS
   ifconfig $TAP_IFACE $NETWORK_GW up
-  iptables -t nat -A POSTROUTING -o $IFACE -j MASQUERADE
+  iptables -t nat -A POSTROUTING -o $NETWORK_IF -j MASQUERADE
   iptables -I FORWARD 1 -i $TAP_IFACE -j ACCEPT
   iptables -I FORWARD 1 -o $TAP_IFACE -m state --state RELATED,ESTABLISHED -j ACCEPT
   if [ "$VNC" == "tcp" ]; then
@@ -119,9 +144,8 @@ elif [ "$NETWORK" == "tap" ]; then
   else
     iptables -t nat -A PREROUTING -d $IP -j DNAT --to-destination $NETWORK_IP
   fi
-  FLAGS_NETWORK="-netdev tap,id=net0,ifname=tap0,vhost=on,script=no,downscript=no -device virtio-net-pci,netdev=net0"
+  FLAGS_NETWORK="-netdev tap,id=net0,ifname=${TAP_IFACE},vhost=on,script=no,downscript=no -device virtio-net-pci,netdev=net0"
 elif [ "$NETWORK" == "macvtap" ]; then
-  NETWORK_IF="${NETWORK_IF:-eth0}"
   NETWORK_BRIDGE="${NETWORK_BRIDGE:-vtap0}"
   hexchars="0123456789ABCDEF"
   NETWORK_MAC="${NETWORK_MAC:-$(echo 00:F0$(for i in {1..8} ; do echo -n ${hexchars:$(( $RANDOM % 16 )):1} ; done | sed -e 's/\(..\)/:\1/g'))}"
@@ -172,7 +196,7 @@ fi
 echo "Using ${NETWORK}"
 echo "parameter: ${FLAGS_NETWORK}"
 
-echo "[Remote Access]"
+echo "[remote access]"
 if [ "$VNC" == "tcp" ]; then
   FLAGS_REMOTE_ACCESS="-vnc ${VNC_IP}:${VNC_ID}"
 elif [ "$VNC" == "reverse" ]; then
@@ -196,14 +220,53 @@ if [ -n "$KEYBOARD" ]; then
   echo "parameter: ${FLAGS_KEYBOARD}"
 fi
 
+if [ -n "$KEYBOARD_LAYOUT" ]; then
+  echo "[keyboard layout]"
+  FLAGS_KEYBOARD_LAYOUT="-k ${KEYBOARD_LAYOUT}"
+  echo "parameter: ${FLAGS_KEYBOARD_LAYOUT}"
+else
+  FLAGS_KEYBOARD_LAYOUT="-k en-us"
+fi
+
+if [ -n "$USB_DEVICES" ]; then
+  echo "[usb devices]"
+  FLAGS_USB_DEVICES="-usb ${USB_DEVICES}"
+  echo "parameter: ${FLAGS_USB_DEVICES}"
+else
+  FLAGS_USB_DEVICES="-usb -usbdevice tablet"
+fi
+
+if [ -n "$NAME" ]; then
+  echo "[name]"
+  FLAGS_NAME="-name $NAME"
+  echo "parameter: ${FLAGS_NAME}"
+else
+  FLAGS_NAME="-name ${HOSTNAME:-guest}"
+fi
+
+if [ -n "$EXTRA_ARGS" ]; then
+  echo "[extra args]"
+  FLAGS_EXTRA="-no-shutdown ${EXTRA_ARGS}"
+  echo "parameter: ${EXTRA_ARGS}"
+else
+  FLAGS_EXTRA="-no-shutdown"
+fi
+
 set -x
-exec /usr/bin/kvm ${FLAGS_REMOTE_ACCESS} \
-  -k en-us -m ${RAM} -smp ${SMP} -cpu ${FLAGS_CPU} -usb -usbdevice tablet -no-shutdown \
-  -name ${HOSTNAME} \
+exec ${QEMU_BINARY} \
+  ${FLAGS_ACCEL} \
+  ${FLAGS_CPU} \
+  ${FLAGS_SMP} \
+  ${FLAGS_RAM} \
+  ${FLAGS_REMOTE_ACCESS} \
   ${FLAGS_DISK_IMAGE} \
   ${FLAGS_FLOPPY_IMAGE} \
   ${FLAGS_ISO} \
   ${FLAGS_ISO2} \
   ${FLAGS_NETWORK} \
   ${FLAGS_KEYBOARD} \
-  ${FLAGS_BOOT}
+  ${FLAGS_BOOT} \
+  ${FLAGS_KEYBOARD_LAYOUT} \
+  ${FLAGS_USB_DEVICES} \
+  ${FLAGS_NAME} \
+  ${FLAGS_EXTRA}
