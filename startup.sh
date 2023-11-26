@@ -155,7 +155,7 @@ elif [ "$NETWORK" == "tap" ]; then
     --dhcp-range=$NETWORK_IP,$NETWORK_IP \
     --dhcp-option=option:router,$NETWORK_GW \
     --dhcp-option=option:dns-server,$NAMESERVERS
-  ifconfig $TAP_IFACE $NETWORK_GW up
+  ifconfig $TAP_IFACE $NETWORK_GW/24 up
   iptables -t nat -A POSTROUTING -o $NETWORK_IF -j MASQUERADE
   iptables -I FORWARD 1 -i $TAP_IFACE -j ACCEPT
   iptables -I FORWARD 1 -o $TAP_IFACE -m state --state RELATED,ESTABLISHED -j ACCEPT
