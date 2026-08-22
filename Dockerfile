@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04@sha256:33ceb71981b602c1a7443a53469e4dba065f7503eab3078a2d7a57a2ab987517
 LABEL org.opencontainers.image.authors="Emre <e@emre.pm>"
 
 RUN \
@@ -13,6 +13,7 @@ ADD startup.sh /
 
 ENV \
   QEMU_BINARY=qemu-system-x86_64 \
+  MACHINE="" \
   RAM=2048 \
   SMP=1 \
   CPU=qemu64 \
