@@ -25,6 +25,12 @@ if [ ! -d /data ]; then
   fi
 fi
 
+if [ -n "$MACHINE" ]; then
+  echo "[machine]"
+  FLAGS_MACHINE="-machine ${MACHINE}"
+  echo "parameter: ${FLAGS_MACHINE}"
+fi
+
 if [ -n "$ACCEL" ]; then
   echo "[accel]"
   FLAGS_ACCEL="-accel ${ACCEL}"
@@ -293,6 +299,7 @@ fi
 
 set -x
 exec ${QEMU_BINARY} \
+  ${FLAGS_MACHINE} \
   ${FLAGS_ACCEL} \
   ${FLAGS_CPU} \
   ${FLAGS_SMP} \
