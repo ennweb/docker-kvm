@@ -77,6 +77,23 @@ docker run \
     ennweb/kvm
 ```
 
+## Disk options
+
+`-e DISK_DEVICE=scsi`
+> Attaches the image through virtio-scsi (default). Any other value is passed straight to `-drive if=...`, e.g. `virtio`, `ide`, `none`.
+
+`-e IMAGE_CACHE=writeback -e IMAGE_DISCARD=unmap`
+> Host cache mode and discard/TRIM handling. `IMAGE_DISCARD=unmap` lets the guest release freed blocks back to a sparse or qcow2 image.
+
+`-e IMAGE_DETECT_ZEROES=unmap`
+> Converts all-zero writes into unmap requests. Requires `IMAGE_DISCARD=unmap`. Defaults to `off`.
+
+`-e DISK_IOTHREAD=1`
+> Runs block I/O on a dedicated iothread instead of the vcpu threads. virtio-scsi only.
+
+`-e DISK_QUEUES=4`
+> Number of virtio-scsi request queues, normally matched to `SMP`. virtio-scsi only, defaults to 1.
+
 ## Network modes
 
 `-e NETWORK=bridge --net=host -e NETWORK_BRIDGE=vmbr0 -e NETWORK_MAC=01:02:03:04:05`

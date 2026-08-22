@@ -97,10 +97,30 @@ if [ "$IMAGE_CREATE" == "1" ]; then
 elif [ "${IMAGE:0:4}" != "rbd:" ] && [ ! -f "$IMAGE" ]; then
   echo "IMAGE not found: ${IMAGE}"; exit 1;
 fi
+# Drive options shared by both device paths. These used to be split: the scsi
+# path passed discard but not format, every other path passed format but not
+# discard. So non-scsi devices silently ran without TRIM and could never
+# release freed blocks, while scsi left qemu probing the image format.
+DISK_IOTHREAD="${DISK_IOTHREAD:-0}"
+DISK_QUEUES="${DISK_QUEUES:-1}"
+IMAGE_DETECT_ZEROES="${IMAGE_DETECT_ZEROES:-off}"
+DRIVE_OPTS="format=${IMAGE_FORMAT},cache=${IMAGE_CACHE},discard=${IMAGE_DISCARD},detect-zeroes=${IMAGE_DETECT_ZEROES}"
+
 if [ "$DISK_DEVICE" == "scsi" ]; then
-  FLAGS_DISK_IMAGE="-device virtio-scsi-pci,id=scsi -drive file=${IMAGE},if=none,id=hd,cache=${IMAGE_CACHE},discard=${IMAGE_DISCARD},index=1 -device scsi-hd,drive=hd"
+  # iothread moves block I/O off the vcpu threads; num_queues lets the guest
+  # scale virtio-scsi queues with its cpu count. Both are opt-in.
+  FLAGS_IOTHREAD=""
+  SCSI_OPTS=""
+  if [ "$DISK_IOTHREAD" == "1" ]; then
+    FLAGS_IOTHREAD="-object iothread,id=iothread0"
+    SCSI_OPTS="${SCSI_OPTS},iothread=iothread0"
+  fi
+  if [ "$DISK_QUEUES" != "1" ]; then
+    SCSI_OPTS="${SCSI_OPTS},num_queues=${DISK_QUEUES}"
+  fi
+  FLAGS_DISK_IMAGE="${FLAGS_IOTHREAD} -device virtio-scsi-pci,id=scsi${SCSI_OPTS} -drive file=${IMAGE},if=none,id=hd,${DRIVE_OPTS},index=1 -device scsi-hd,drive=hd"
 else
-  FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=${DISK_DEVICE},cache=${IMAGE_CACHE},format=${IMAGE_FORMAT},index=1"
+  FLAGS_DISK_IMAGE="-drive file=${IMAGE},if=${DISK_DEVICE},${DRIVE_OPTS},index=1"
 fi
 echo "parameter: ${FLAGS_DISK_IMAGE}"
 
